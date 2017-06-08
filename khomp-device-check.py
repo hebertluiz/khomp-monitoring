@@ -19,7 +19,7 @@ import getopt
 
 deviceSerial = ''
 checkType = ''
-quiet = False
+nagios = False
 linkNumber = '0'
 deviceChannel = ''
 
@@ -28,7 +28,6 @@ deviceChannel = ''
 kQueryTcpConn = socket.socket()
 hostname = 'localhost'  # socket.gethostname() # Get local machine name
 port = 14130
-kQueryTcpConn.connect((hostname, port))
 
 
 ## Definicao de funcoes
@@ -40,8 +39,11 @@ def kQueryConnect(command, arg1):
 #
 # Retorna resposta da api
 
+    kQueryTcpConn.connect((hostname, port))
     kQueryTcpConn.send(command + arg1 + '\n')
     r = kQueryTcpConn.recv(1024)
+    kQueryConnect.close()
+
     if r[:12] == 'Query failed':
         print 'ERRO - ' + r \
             + ' Durante a Requisicao | Erro ao executar o commando.'
@@ -69,7 +71,7 @@ def parseCliArg():
     # # Lista de argumetos
     #
 
-    (opts, args) = getopt.getopt(sys.argv[1:], '-nhs:t:', [
+    (opts, args) = getopt.getopt(sys.argv[1:], 'nhs:t:l:', [
         'serial=',
         'nagios',
         'help',
@@ -84,9 +86,7 @@ def parseCliArg():
         #
 
         if opt in ('-h', '--help'):
-            print '''Usage: ./khomp-device-check.py --serial <SERIAL> --check-type <E1|GSM|DEVICE> --link=<Numero do link>
-
-'''
+            print '''Usage: ./khomp-device-check.py --serial <SERIAL> --check-type <E1|GSM|DEVICE> --link=<Numero do link>'''
             sys.exit()
         elif opt in ('--serial', '-s'):
             my_serial = arg
@@ -141,8 +141,7 @@ def checkE1(serial, link):
 # @kE1status
 #  "k3l.Status.Link."+ serial +"."+ link +".0.E1"
 
-    return kQueryConnect('QUERY ', 'k3l.Status.Link.' + serial + '.'
-                         + str(link) + '.0.E1')
+    return int(kQueryConnect('QUERY ', 'k3l.Status.Link.' + serial + '.' + str(link) + '.0.E1'))
 
 
 def checkDevice(serial):
@@ -152,40 +151,41 @@ def checkDevice(serial):
 
 ## Coletando argumentos.
 
-(deviceSerial, checkType, quiet, linkNumber, deviceChannel) = \
-    parseCliArg()
+(deviceSerial, checkType, nagios, linkNumber, deviceChannel) = parseCliArg()
 
 ## Verificando links E1
 
 if checkType in ('E1', 'e1'):
 
-    response = checkE1(deviceSerial, 0)
+    response = int( checkE1(deviceSerial, 0))
+
     if not nagios:
         print 'Estado do Link: ' + kE1StatusParser(response)
+
     elif response == 0:
-        print kE1StatusParser(response) + '- Link: ' + linkNumber \
-            + kE1StatusParser(response) + '| Estado do Link ' \
+        print kE1StatusParser(response) + ' - Link ' + linkNumber + ': ' + kE1StatusParser(response) + ' | Estado do Link ' \
             + linkNumber + ': ' + kE1StatusParser(response)
         sys.exit(0)
+
     elif response == 32:
-        print 'WARNING - ' + 'Link: ' + linkNumber \
-            + kE1StatusParser(response) + '| Estado do Link ' \
+        print 'WARNING - ' + 'Link ' + linkNumber + ': '  + kE1StatusParser(response) + ' | Estado do Link ' \
             + linkNumber + ': ' + kE1StatusParser(response)
         sys.exit(1)
+
     elif response == 255:
-        print 'UNKNOWN - ' + 'Link: ' + linkNumber \
-            + kE1StatusParser(response) + '| Estado do Link ' \
+        print 'UNKNOWN - ' + 'Link ' + linkNumber + ': '  + kE1StatusParser(response) + ' | Estado do Link ' \
             + linkNumber + ': ' + kE1StatusParser(response)
         sys.exit(3)
+
     else:
-        print 'CRITICAL - ' + 'Link: ' + linkNumber \
-            + kE1StatusParser(response) + '| Estado do Link ' \
+        print 'CRITICAL - ' + 'Link ' + linkNumber + ': ' + kE1StatusParser(response) + '| Estado do Link ' \
             + linkNumber + ': ' + kE1StatusParser(response)
         sys.exit(2)
-elif checkType in ('DEVICE', 'device') or checkType == '':
+
 
 ## Verificacao de estado para dispositivos.
 
+elif checkType in ('DEVICE', 'device') or checkType == '':
     response = checkDevice(deviceSerial)
     if response:
         print 'OK - EBS Serial: ' + deviceSerial \
