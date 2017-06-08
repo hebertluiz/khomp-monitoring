@@ -1,4 +1,15 @@
-  #!/usr/bin/python      
+#!/usr/bin/python      
+
+#title           :khomp-device-check.py
+#description     :This script will check de state of khomp devices
+#author 	     :Hebert L Silva
+#date            :20170604
+#version         :0.2
+#usage		     : ./khomp-device-check.py --serial <SERIAL> --check-type <E1|GSM|DEVICE> --link=<Numero do link>\n\n'
+#python_version  :2.6
+#==============================================================================
+
+    
 import socket, sys, getopt           
 
 ## Variaveis Globais
@@ -41,7 +52,7 @@ def parseCliArg():
 #@deviceChannel
     my_serial = ''
     my_type = ''
-    my_quiet = False
+    my_nagios = False
     my_link = 0
     my_channel = ''
 
@@ -49,9 +60,9 @@ def parseCliArg():
     #
 
     opts, args = getopt.getopt(sys.argv[1:],
-                    'qhs:t:',
+                    '-nhs:t:',
                     ['serial=',
-                    'quiet',
+                    'nagios',
                     'help',
                     'check-type=',
                     'channel=',
@@ -64,21 +75,21 @@ def parseCliArg():
         #
 
         if opt in ('-h','--help'):
-            print 'Usage: check-khomp.py --serial <SERIAL> --check-type <E1|GSM|DEVICE> --link=<Numero do link>\n\n'
+            print 'Usage: ./khomp-device-check.py --serial <SERIAL> --check-type <E1|GSM|DEVICE> --link=<Numero do link>\n\n'
             sys.exit()
         elif opt in  ('--serial','-s'):
             my_serial = arg
         elif opt in ('--check-type','-t'):
             my_type = arg
-        elif opt in ('-q', '--quiet'):
-            my_quiet = True
+        elif opt in ('-q', '--quiet','-n','--nagios'):
+            my_nagios = True
         elif opt in ('-l','--link'):
             my_link = arg
         elif opt in ('-c', '--channel'):
             my_channel = arg
 
 
-    return my_serial, my_type, my_quiet, my_link, my_channel
+    return my_serial, my_type, my_nagios, my_link, my_channel
 
 def kE1StatusParser(response):
 ## Retorna o estado do E1 com base na reposta da api
@@ -116,7 +127,7 @@ def checkE1(serial, link):
 
 
 def checkDevice(serial):
-    return 0
+    return bool(kQueryConnect("QUERY ", "k3l.Status.Connected."+ str(serial)))
 
 
 ## Coletando argumentos.
@@ -124,11 +135,11 @@ deviceSerial, checkType, quiet, linkNumber, deviceChannel = parseCliArg()
 
 
 
-
+## Verificando links E1 
 if checkType in ('E1','e1'):
 
     response = checkE1( deviceSerial, 0)
-    if !quiet:
+    if !nagios:
         print "Estado do Link: " + kE1StatusParser(response)
     elif response == 0:
         print kE1StatusParser(response) + '- Link: ' + linkNumber + kE1StatusParser(response) +'| Estado do Link ' + linkNumber + ': ' + kE1StatusParser(response) 
@@ -142,3 +153,15 @@ if checkType in ('E1','e1'):
     else:
         print 'CRITICAL - ' + 'Link: ' + linkNumber + kE1StatusParser(response) +'| Estado do Link ' + linkNumber + ': ' + kE1StatusParser(response)
         sys.exit(2)
+        
+## Verificacao de estado para dispositivos.
+elif checkType in ('DEVICE','device') or checkType == '':
+
+    response = checkDevice( deviceSerial)
+    if response:
+        print 'OK - EBS Serial: ' + deviceSerial + ' Estado: UP | Device: ' + deviceSerial + 'Estado: UP'
+        sys.exit(0)
+    else:
+        print 'DOWN - EBS Serial: ' + deviceSerial + ' Estado: DOWN | Device: ' + deviceSerial + 'Estado: DOWN'
+        sys.exit(2)
+ 
