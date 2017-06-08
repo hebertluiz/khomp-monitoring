@@ -38,7 +38,7 @@ def kQueryConnect(command, arg1,):
 #
 # Retorna resposta da api
     kQueryTcpConn.connect((hostname,port))
-    kQueryTcpConn.send(command + " " arg1 + '\n')
+    kQueryTcpConn.send( command + ' ' + arg1 + '\n' )
     return kQueryTcpConn.recv(1024)
 
 
