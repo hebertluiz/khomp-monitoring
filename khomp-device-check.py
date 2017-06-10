@@ -30,6 +30,7 @@ hostname = 'localhost'  # socket.gethostname() # Get local machine name
 port = 14130
 
 
+
 ## Definicao de funcoes
 #
 
@@ -67,17 +68,19 @@ def parseCliArg():
     my_nagios = False
     my_link = 0
     my_channel = ''
+    my_address = ''
 
     # # Lista de argumetos
     #
 
-    (opts, args) = getopt.getopt(sys.argv[1:], 'nhs:t:l:', [
+    (opts, args) = getopt.getopt(sys.argv[1:], 'nhs:t:l:a:', [
         'serial=',
         'nagios',
         'help',
         'check-type=',
         'channel=',
         'link=',
+        'address='
         ])
 
     for (opt, arg) in opts:
@@ -98,8 +101,10 @@ def parseCliArg():
             my_link = arg
         elif opt in ('-c', '--channel'):
             my_channel = arg
+        elif opt in ('-a', '--address'):
+            my_address = arg
 
-    return (my_serial, my_type, my_nagios, my_link, my_channel)
+    return (my_serial, my_type, my_nagios, my_link, my_channel, my_address )
 
 
 def kE1StatusParser(response):
@@ -151,7 +156,11 @@ def checkDevice(serial):
 
 ## Coletando argumentos.
 
-(deviceSerial, checkType, nagios, linkNumber, deviceChannel) = parseCliArg()
+(deviceSerial, checkType, nagios, linkNumber, deviceChannel, serverAddress) = parseCliArg()
+
+if len (serverAddress) > 0:
+    hostname = serverAddress
+
 
 ## Verificando links E1
 
