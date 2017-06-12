@@ -42,7 +42,8 @@ def kQueryConnect(command, arg1):
     kQueryTcpConn.connect((hostname, port))
     kQueryTcpConn.send(command + arg1 + '\n')
     r = kQueryTcpConn.recv(1024)
-    kQueryConnect.close()
+    ## Need to debug this close statement
+    #kQueryConnect.close()
 
     if r[:12] == 'Query failed':
         print 'ERRO - ' + r \
