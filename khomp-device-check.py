@@ -157,7 +157,7 @@ def checkDevice(serial):
 
 if checkType in ('E1', 'e1'):
 
-    response = int( checkE1(deviceSerial, 0))
+    response = int( checkE1(deviceSerial, linkNumber))
 
     if not nagios:
         print 'Estado do Link: ' + kE1StatusParser(response)
@@ -182,10 +182,9 @@ if checkType in ('E1', 'e1'):
             + linkNumber + ': ' + kE1StatusParser(response)
         sys.exit(2)
 
-
-## Verificacao de estado para dispositivos.
-
 elif checkType in ('DEVICE', 'device') or checkType == '':
+    ## Verificacao de estado para dispositivos.
+    
     response = checkDevice(deviceSerial)
     if response:
         print 'OK - EBS Serial: ' + deviceSerial \
